@@ -7,12 +7,15 @@ from utils import split_into_blocks
 class DetectionDoctored:
     def __init__(self, img):
         self.img = img.astype(np.float32)
+        self.theta = 10 * np.pi / 180
+        self.E_thr = 30
 
     def calc_approx_second_derivative(self):
         kernel = np.array([[-1,2, -1]])
         Ix = cv2.filter2D(self.img, -1, kernel)
         Iy = cv2.filter2D(self.img, -1, kernel.T)
         return np.abs(Ix), np.abs(Iy)
+
 
     def first_stage_BAG(self, d, ax):
         if ax == 'horizontal':
@@ -44,10 +47,18 @@ class DetectionDoctored:
 
         return score.reshape(g.shape[0]//8, g.shape[1]//8)
 
+    def preprocessing(self):
+        grad_x = cv2.Sobel(self.img, cv2.CV_16S, 1, 0, ksize=3)
+        grad_y = cv2.Sobel(self.img, cv2.CV_16S, 0, 1, ksize=3)
+        angles = np.arctan2(grad_y, grad_x)
+        self.angle_mask = np.where((0 <= angles)&(angles <=self.theta)|((np.pi/2 - self.theta)>=angles)&((np.pi/2 + self.theta)<=angles)|(angles >= (np.pi - self.theta))&(angles < np.pi), 1, 0)
 
 
     def run(self):
+        self.preprocessing()
         d_v, d_h = self.calc_approx_second_derivative()
+        d_v[self.angle_mask == 1] = 0
+        d_h[self.angle_mask == 1] = 0
         self.e_h = self.first_stage_BAG(d_h, 'horizontal')
         self.e_v = self.first_stage_BAG(d_v, 'vertical')
         self.g_h = self.second_stage_BAG(self.e_h, 'horizontal')
