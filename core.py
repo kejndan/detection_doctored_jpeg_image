@@ -6,9 +6,10 @@ from utils import split_into_blocks
 
 class DetectionDoctored:
     def __init__(self, img):
-        self.img = img.astype(np.float32)
+        self.img = img.astype(np.float64)
         self.theta = 10 * np.pi / 180
         self.E_thr = 30
+        self.angle_mask = None
 
     def calc_approx_second_derivative(self):
         kernel = np.array([[-1,2, -1]])
@@ -29,7 +30,7 @@ class DetectionDoctored:
 
     def second_stage_BAG(self, e_matrix, ax):
         mask = np.zeros((33, 1))
-        mask[[0, 7, 16, 23, -1]] = 1
+        mask[[0, 8, 16, 24, 32]] = 1
         if ax == 'horizontal':
             return median_filter(e_matrix, footprint=mask)
         elif ax == 'vertical':
@@ -50,15 +51,22 @@ class DetectionDoctored:
     def preprocessing(self):
         grad_x = cv2.Sobel(self.img, cv2.CV_16S, 1, 0, ksize=3)
         grad_y = cv2.Sobel(self.img, cv2.CV_16S, 0, 1, ksize=3)
+        mag = np.sqrt(np.power(grad_x,2) + np.power(grad_y,2))
+        grad_y[mag < self.E_thr] = 0
+        grad_x[mag < self.E_thr] = 0
         angles = np.arctan2(grad_y, grad_x)
-        self.angle_mask = np.where((0 <= angles)&(angles <=self.theta)|((np.pi/2 - self.theta)>=angles)&((np.pi/2 + self.theta)<=angles)|(angles >= (np.pi - self.theta))&(angles < np.pi), 1, 0)
+        self.angle_mask = np.where((0 <= angles)&(angles <=self.theta)
+                                   |((np.pi/2 - self.theta)<=angles)&((np.pi/2 + self.theta)>=angles)
+                                   |(angles >= (np.pi - self.theta))&(angles < np.pi),
+                                   1, 0)
 
 
     def run(self):
         self.preprocessing()
         d_v, d_h = self.calc_approx_second_derivative()
-        d_v[self.angle_mask == 1] = 0
-        d_h[self.angle_mask == 1] = 0
+        if self.angle_mask is not None:
+            d_v[self.angle_mask == 1] = 0
+            d_h[self.angle_mask == 1] = 0
         self.e_h = self.first_stage_BAG(d_h, 'horizontal')
         self.e_v = self.first_stage_BAG(d_v, 'vertical')
         self.g_h = self.second_stage_BAG(self.e_h, 'horizontal')
