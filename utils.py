@@ -10,6 +10,12 @@ def show_image(img):
     plt.axis('off')
     plt.show()
 
+def save_image(img, name):
+    plt.imshow(img, cmap='gray')
+    plt.axis('off')
+    plt.savefig(name)
+
+
 def split_into_blocks(matrix, size):
     h, w = matrix.shape
     return matrix.reshape(h//size[0], size[0], w//size[1], size[1]).swapaxes(1,2).reshape(-1, size[0], size[1])

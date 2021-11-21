@@ -5,11 +5,12 @@ from utils import split_into_blocks
 
 
 class DetectionDoctored:
-    def __init__(self, img):
+    def __init__(self, img, preprocessing_img=True):
         self.img = img.astype(np.float64)
         self.theta = 10 * np.pi / 180
         self.E_thr = 30
         self.angle_mask = None
+        self.preprocessing_img = preprocessing_img
 
     def calc_approx_second_derivative(self):
         kernel = np.array([[-1,2, -1]])
@@ -55,14 +56,15 @@ class DetectionDoctored:
         grad_y[mag < self.E_thr] = 0
         grad_x[mag < self.E_thr] = 0
         angles = np.arctan2(grad_y, grad_x)
-        self.angle_mask = np.where((0 <= angles)&(angles <=self.theta)
-                                   |((np.pi/2 - self.theta)<=angles)&((np.pi/2 + self.theta)>=angles)
-                                   |(angles >= (np.pi - self.theta))&(angles < np.pi),
+        self.angle_mask = np.where((0 <= angles)&(angles <= self.theta)
+                                   |((np.pi/2 - self.theta) <= angles)&(angles <= (np.pi/2 + self.theta))
+                                   |((np.pi - self.theta) <= angles)&(angles < np.pi),
                                    1, 0)
 
 
     def run(self):
-        self.preprocessing()
+        if self.preprocessing_img:
+            self.preprocessing()
         d_v, d_h = self.calc_approx_second_derivative()
         if self.angle_mask is not None:
             d_v[self.angle_mask == 1] = 0
