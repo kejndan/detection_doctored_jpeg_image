@@ -11,9 +11,7 @@ def show_image(img):
     plt.show()
 
 def save_image(img, name):
-    plt.imshow(img, cmap='gray')
-    plt.axis('off')
-    plt.savefig(name)
+    cv2.imwrite(name, img)
 
 
 def split_into_blocks(matrix, size):

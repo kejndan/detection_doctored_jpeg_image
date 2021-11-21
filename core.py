@@ -53,13 +53,13 @@ class DetectionDoctored:
         grad_x = cv2.Sobel(self.img, cv2.CV_16S, 1, 0, ksize=3)
         grad_y = cv2.Sobel(self.img, cv2.CV_16S, 0, 1, ksize=3)
         mag = np.sqrt(np.power(grad_x,2) + np.power(grad_y,2))
-        grad_y[mag < self.E_thr] = 0
-        grad_x[mag < self.E_thr] = 0
+        grad_y[mag <= self.E_thr] = 0
+        grad_x[mag <= self.E_thr] = 0
         angles = np.arctan2(grad_y, grad_x)
         self.angle_mask = np.where((0 <= angles)&(angles <= self.theta)
                                    |((np.pi/2 - self.theta) <= angles)&(angles <= (np.pi/2 + self.theta))
                                    |((np.pi - self.theta) <= angles)&(angles < np.pi),
-                                   1, 0)
+                                   0, 1)
 
 
     def run(self):
