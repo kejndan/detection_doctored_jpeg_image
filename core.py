@@ -18,7 +18,6 @@ class DetectionDoctored:
         Iy = cv2.filter2D(self.img, -1, kernel.T)
         return np.abs(Ix), np.abs(Iy)
 
-
     def first_stage_BAG(self, d, ax):
         if ax == 'horizontal':
             kernel = np.ones((1, 33))
@@ -60,7 +59,6 @@ class DetectionDoctored:
                                    |((np.pi/2 - self.theta) <= angles)&(angles <= (np.pi/2 + self.theta))
                                    |((np.pi - self.theta) <= angles)&(angles < np.pi),
                                    0, 1)
-
 
     def run(self):
         if self.preprocessing_img:
